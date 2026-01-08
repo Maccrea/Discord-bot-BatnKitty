@@ -13,34 +13,37 @@ const client = new Client({
 const callSessions = new Map();
 const LOG_CHANNEL_ID = '1456959703807561790'; 
 
-client.on('ready', () => {
-    console.log(`✅ Bot berhasil login sebagai ${client.user.tag}!`);
+const TARGET_CHANNEL_ID = '1448369229672742977'; 
+const JAM_YANG_MAU_DISET = 44; 
+const MENIT_YANG_MAU_DISET = 41; 
+const DETIK_YANG_MAU_DISET = 30;
 
-    const TARGET_CHANNEL_ID = '1448369229672742977'; 
-    const JAM_YANG_MAU_DISET = 29; 
-    const MENIT_YANG_MAU_DISET = 55; 
-    const DETIK_YANG_MAU_DISET = 30;
+function getStartTime(channelId) {
+    if (channelId === TARGET_CHANNEL_ID) {
+        const durasiMundur = (JAM_YANG_MAU_DISET * 60 * 60 * 1000) + 
+                           (MENIT_YANG_MAU_DISET * 60 * 1000) + 
+                           (DETIK_YANG_MAU_DISET * 1000);
+        return Date.now() - durasiMundur;
+    } else {
+        // Waktu Normal
+        return Date.now();
+    }
+}
+
+client.on('ready', () => {
+    console.log(`✅ Bot Logger berhasil login sebagai ${client.user.tag}!`);
 
     client.guilds.cache.forEach(guild => {
         guild.channels.cache.forEach(channel => {
             if (channel.isVoiceBased() && channel.members.size > 0) {
                 
-                let startTime;
-
-                if (channel.id === TARGET_CHANNEL_ID) {
-                    console.log(`⚠️ MENGEMBALIKAN WAKTU UNTUK CHANNEL: ${channel.name}`);
-                    
-                    const durasiMundur = (JAM_YANG_MAU_DISET * 60 * 60 * 1000) + 
-                                       (MENIT_YANG_MAU_DISET * 60 * 1000) + 
-                                       (DETIK_YANG_MAU_DISET * 1000);
-                    
-                    startTime = Date.now() - durasiMundur;
-                    
-                } else {
-                    startTime = Date.now();
-                }
+                const startTime = getStartTime(channel.id);
 
                 if (!callSessions.has(channel.id)) {
+                    if (channel.id === TARGET_CHANNEL_ID) {
+                        console.log(`⚠️ DETEKSI AWAL: Channel TARGET '${channel.name}' ditemukan aktif!`);
+                    }
+                    
                     callSessions.set(channel.id, { 
                         start: startTime, 
                         name: channel.name 
@@ -68,7 +71,6 @@ client.on('ready', () => {
 });
 
 client.on('voiceStateUpdate', (oldState, newState) => {
-    if (newState.member.user.bot) return;
 
     const channel = newState.channel || oldState.channel;
     if (!channel) return;
@@ -76,9 +78,16 @@ client.on('voiceStateUpdate', (oldState, newState) => {
     const channelId = channel.id;
     const membersCount = channel.members.size;
 
-    if (membersCount === 1 && !callSessions.has(channelId)) {
+    if (membersCount > 0 && !callSessions.has(channelId)) {
+        
+        const startTime = getStartTime(channelId);
+        
+        if (channelId === TARGET_CHANNEL_ID) {
+            console.log(`⚠️ LIVE DETEKSI: Bot/User masuk ke Channel Target! Manipulasi waktu aktif.`);
+        }
+
         callSessions.set(channelId, {
-            start: Date.now(),
+            start: startTime,
             name: channel.name
         });
     }
