@@ -13,25 +13,32 @@ const client = new Client({
 const callSessions = new Map();
 const LOG_CHANNEL_ID = '1456959703807561790'; 
 
-const TARGET_CHANNEL_ID = '1448369229672742977'; 
-const JAM_YANG_MAU_DISET = 44; 
-const MENIT_YANG_MAU_DISET = 41; 
-const DETIK_YANG_MAU_DISET = 30;
+const TARGET_CHANNEL_ID = process.env.TARGET_CHANNEL_ID || ""; 
+const JAM_YANG_MAU_DISET = parseInt(process.env.OFFSET_JAM || 0); 
+const MENIT_YANG_MAU_DISET = parseInt(process.env.OFFSET_MENIT || 0); 
+const DETIK_YANG_MAU_DISET = parseInt(process.env.OFFSET_DETIK || 0);
 
 function getStartTime(channelId) {
-    if (channelId === TARGET_CHANNEL_ID) {
+    if (TARGET_CHANNEL_ID && channelId === TARGET_CHANNEL_ID) {
+        
         const durasiMundur = (JAM_YANG_MAU_DISET * 60 * 60 * 1000) + 
                            (MENIT_YANG_MAU_DISET * 60 * 1000) + 
                            (DETIK_YANG_MAU_DISET * 1000);
         return Date.now() - durasiMundur;
+        
     } else {
-        // Waktu Normal
         return Date.now();
     }
 }
 
 client.on('ready', () => {
     console.log(`✅ Bot Logger berhasil login sebagai ${client.user.tag}!`);
+    
+    if (TARGET_CHANNEL_ID) {
+        console.log(`🎯 Target Channel SET: ${TARGET_CHANNEL_ID} (Mundur ${JAM_YANG_MAU_DISET}j ${MENIT_YANG_MAU_DISET}m)`);
+    } else {
+        console.log(`ℹ️ Target Channel KOSONG. Semua berjalan normal.`);
+    }
 
     client.guilds.cache.forEach(guild => {
         guild.channels.cache.forEach(channel => {
@@ -40,7 +47,7 @@ client.on('ready', () => {
                 const startTime = getStartTime(channel.id);
 
                 if (!callSessions.has(channel.id)) {
-                    if (channel.id === TARGET_CHANNEL_ID) {
+                    if (TARGET_CHANNEL_ID && channel.id === TARGET_CHANNEL_ID) {
                         console.log(`⚠️ DETEKSI AWAL: Channel TARGET '${channel.name}' ditemukan aktif!`);
                     }
                     
@@ -82,7 +89,7 @@ client.on('voiceStateUpdate', (oldState, newState) => {
         
         const startTime = getStartTime(channelId);
         
-        if (channelId === TARGET_CHANNEL_ID) {
+        if (TARGET_CHANNEL_ID && channelId === TARGET_CHANNEL_ID) {
             console.log(`⚠️ LIVE DETEKSI: Bot/User masuk ke Channel Target! Manipulasi waktu aktif.`);
         }
 
@@ -117,6 +124,7 @@ client.on('voiceStateUpdate', (oldState, newState) => {
         }
     }
 });
+
 
 function formatDuration(ms) {
     const seconds = Math.floor((ms / 1000) % 60);
