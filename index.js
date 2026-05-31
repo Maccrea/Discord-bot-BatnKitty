@@ -1,5 +1,17 @@
 require('dotenv').config();
 const { Client, GatewayIntentBits, EmbedBuilder } = require('discord.js');
+const express = require('express');
+
+const app = express();
+const port = process.env.PORT || 3000;
+
+app.get('/', (req, res) => {
+    res.send('Bot Logger is alive & running!');
+});
+
+app.listen(port, () => {
+    console.log(`🌐 Web server berjalan di port ${port}`);
+});
 
 const client = new Client({
     intents: [
@@ -20,12 +32,10 @@ const DETIK_YANG_MAU_DISET = parseInt(process.env.OFFSET_DETIK || 0);
 
 function getStartTime(channelId) {
     if (TARGET_CHANNEL_ID && channelId === TARGET_CHANNEL_ID) {
-        
         const durasiMundur = (JAM_YANG_MAU_DISET * 60 * 60 * 1000) + 
                            (MENIT_YANG_MAU_DISET * 60 * 1000) + 
                            (DETIK_YANG_MAU_DISET * 1000);
         return Date.now() - durasiMundur;
-        
     } else {
         return Date.now();
     }
@@ -43,7 +53,6 @@ client.on('ready', () => {
     client.guilds.cache.forEach(guild => {
         guild.channels.cache.forEach(channel => {
             if (channel.isVoiceBased() && channel.members.size > 0) {
-                
                 const startTime = getStartTime(channel.id);
 
                 if (!callSessions.has(channel.id)) {
@@ -78,7 +87,6 @@ client.on('ready', () => {
 });
 
 client.on('voiceStateUpdate', (oldState, newState) => {
-
     const channel = newState.channel || oldState.channel;
     if (!channel) return;
 
@@ -86,7 +94,6 @@ client.on('voiceStateUpdate', (oldState, newState) => {
     const membersCount = channel.members.size;
 
     if (membersCount > 0 && !callSessions.has(channelId)) {
-        
         const startTime = getStartTime(channelId);
         
         if (TARGET_CHANNEL_ID && channelId === TARGET_CHANNEL_ID) {
@@ -124,7 +131,6 @@ client.on('voiceStateUpdate', (oldState, newState) => {
         }
     }
 });
-
 
 function formatDuration(ms) {
     const seconds = Math.floor((ms / 1000) % 60);
